@@ -11,7 +11,7 @@
 void doit(int fd);
 void read_requesthdrs(rio_t *rp);
 int parse_uri(char *uri, char *filename, char *cgiargs);
-void serve_static(int fd, char *filename, int filesize);
+void serve_static(int fd, char *filename, char *method ,int filesize);
 void get_filetype(char *filename, char *filetype);
 void serve_dynamic(int fd, char *filename, char *cgiargs);
 void clienterror(int fd, char *cause, char *errnum, char *shortmsg,
@@ -55,11 +55,13 @@ void doit(int fd){
   printf("Request headers:\n");
   printf("%s",buf);
   sscanf(buf, "%s %s %s", method, uri, version);
-  if (strcasecmp(method, "GET")){
+  if (!strcasecmp(method, "GET") && !strcasecmp(method, "HEAD")){
     clienterror(fd, method, "501", "Not implemented", "Tiny does not implement this method");
     return;
   }
+  
   read_requesthdrs(&rio);
+  
 
   is_static = parse_uri(uri, filename, cgiargs);
   /* uri의 내용을 filename과 cgiargs로 구분한 뒤 정적이라면 0, 동적이라면 1을 반환*/
@@ -73,7 +75,7 @@ void doit(int fd){
       clienterror(fd , filename, "403", "Forbidden", "Tiny couldn't read the file");
       return;
     }
-    serve_static(fd, filename, sbuf.st_size);
+    serve_static(fd, filename, method, sbuf.st_size);
   }
   else{
     if(!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) {
@@ -114,6 +116,7 @@ void read_requesthdrs(rio_t *rp){
   return;
 }
 
+
 int parse_uri(char *uri, char *filename, char *cgiargs){
   char *ptr;
 
@@ -140,7 +143,7 @@ int parse_uri(char *uri, char *filename, char *cgiargs){
 }
 
 
-void serve_static(int fd, char *filename, int filesize){
+void serve_static(int fd, char *filename, char *method, int filesize){
   int srcfd;
   char *srcp, filetype[MAXLINE], buf[MAXLINE];
 
@@ -153,6 +156,10 @@ void serve_static(int fd, char *filename, int filesize){
   Rio_writen(fd, buf, strlen(buf));
   printf("Response headers:\n");
   printf("%s", buf);
+  
+  if (!strcasecmp(method,"HEAD")){
+    return;
+  }
 
   srcfd = Open(filename, O_RDONLY, 0);
   // srcp = Mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0);
