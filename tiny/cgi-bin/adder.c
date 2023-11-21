@@ -10,10 +10,23 @@ int main(void) {
   int n1 = 0 , n2 = 0;
 
   if ((buf = getenv("QUERY_STRING")) != NULL) {
-    p = strchr(buf , '&');
-    *p = '\0';
-    strcpy(arg1,buf);
-    strcpy(arg2,p+1);
+    // p = strchr(buf , '&');
+    // *p = '\0';
+    // p = strchr(buf,'?');
+    if ((p = strstr(buf,"input1=")) != NULL){
+      sscanf(p + strlen("input1="), "%s", arg1);
+    }
+    else{
+      printf("error1");
+    }
+    if ((p = strstr(buf,"input2=")) != NULL){
+      sscanf(p + strlen("input2="), "%s", arg2);
+    }
+    else{
+      printf("error2");
+    }
+    
+    // strcpy(arg2,p+1);
     n1 = atoi(arg1);
     n2 = atoi(arg2);
   }
